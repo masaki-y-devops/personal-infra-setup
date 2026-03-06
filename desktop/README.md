@@ -1,1 +1,5 @@
-## Arch Linux インストール自動化の記録
+## 自動化を試してみたOS
+- Arch Linux
+- NixOS
+- Linux Mint
+- Windows
