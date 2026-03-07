@@ -182,12 +182,12 @@ cat << RESTCONFIG | sudo tee -a /mnt/etc/nixos/configuration.nix
 		initialPassword = "initpass";
 		extraGroups = [ "wheel" ];
 		};
-	groups.video.members = [ "${OWNER}" ];
+	groups.video.members = [ "\${OWNER}" ];
 	 };
 
  system.activationScripts.stdio = lib.mkForce {
     text = ''
-		chown -R ${OWNER}: /home/${OWNER}
+		chown -R \${OWNER}: /home/\${OWNER}
     '';
 	};
 
