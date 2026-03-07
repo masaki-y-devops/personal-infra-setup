@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cat << OUTPUT > ./install.sh
+cat << OUTPUT > ./installer.sh
 #!/usr/bin/env bash
 
 set_userpref() {
@@ -243,7 +243,7 @@ write_config_for_the_rest
 run_installation
 OUTPUT
 
-chmod +x ./install.sh
+chmod +x ./installer.sh
 
 if ping -c 1 google.com ; then
         echo "Internet connection: OK."
@@ -256,5 +256,5 @@ fi
 ## build tmp nix package manager
 yes | sh <(curl -L https://nixos.org/nix/install) --daemon
 
-## run install.sh
-cat ./install.sh | exec bash -l
+## run installer.sh
+cat ./installer.sh | exec bash -l
