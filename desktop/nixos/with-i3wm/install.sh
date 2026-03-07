@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 ## write temp install.sh
-cat << INSTALLSH > ~/install.sh
+cat << INSTALLSH > ~/installer.sh
 #!/usr/bin/env bash
 
 ## Define functions
@@ -347,7 +347,7 @@ run_installation
 INSTALLSH
 
 ## make install.sh executable
-chmod +x ~/install.sh
+chmod +x ~/installer.sh
 
 ## check network connection to proceed installation
 if ping -c 1 google.com ; then
@@ -362,8 +362,8 @@ fi
 ## Updated on 20250617 to add curl options
 yes | sh <(curl --proto '=https' --tlsv1.2 -L https://nixos.org/nix/install) --daemon
 
-## run install.sh
-cat ~/install.sh | exec bash -l
+## run installer.sh
+cat ~/installer.sh | exec bash -l
 
 ## write sway,i3status config
 sudo mkdir -p /mnt/home/${OWNER}/.config/{sway,i3status}
