@@ -103,7 +103,7 @@ sudo systemctl enable customfw
 
 (2) termuxからubuntu@public-ipとしてsshログイン
 
-自分はどこでもsshでメンテナンスできるようにtermuxを使ったが、もちろん他のsshクライアントでも大丈夫。
+自分はどこでもsshでメンテナンスできるようにtermuxを使ったが、もちろん他のsshクライアントでも大丈夫と思われる。
 
 (3) インスタンスにtailscaleをインストール
 
