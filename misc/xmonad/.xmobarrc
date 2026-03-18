@@ -1,0 +1,16 @@
+Config { font = "xft:Ubuntu Regular-13"
+       , bgColor = "#000000"
+       , fgColor = "#FFFFFF"
+       , border = NoBorder
+       , borderColor = "#000000"
+       , position = TopW L 100
+       , lowerOnStart = False
+       , hideOnStart = False
+       , commands = [ Run Volume "default" "Master" ["-t","<volume>%"] 1
+                    , Run Wireless "wlan0" ["-t","<essid>"] 1
+                    , Run Date "%Y/%m/%d %H:%M" "date" 1
+                    , Run XMonadLog
+                    ]
+       , sepChar = "%"
+       , alignSep = "}{"
+       , template = "%XMonadLog% }{ VOL.%default:Master% | %wlan0wi% | %date%" }
