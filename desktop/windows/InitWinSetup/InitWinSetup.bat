@@ -389,7 +389,7 @@ reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Ad
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ListViewAlphaSelect" /t "REG_DWORD" /d "0" /f
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ListViewShadow" /t "REG_DWORD" /d "0" /f
 reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarAnimations" /t "REG_DWORD" /d "0" /f
-reg add "HKEY_CURRENT_USERの\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v "NumThumbnails" /t "REG_DWORD" /d "0" /f
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v "NumThumbnails" /t "REG_DWORD" /d "0" /f
 
 :: スタート右クリック -> システム -> 関連リンク システムの詳細設定 -> システムのプロパティ 詳細設定タブ -> 「パフォーマンス」の設定ボタン -> 「視覚効果」タブ を「カスタム」に
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v "VisualFXSetting" /t "REG_DWORD" /d "3" /f
