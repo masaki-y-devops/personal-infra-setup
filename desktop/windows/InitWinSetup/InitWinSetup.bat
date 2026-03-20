@@ -374,9 +374,35 @@ pause
 :: window animation config
 :: ウインドウアニメーションのオンオフ設定。
 :: 当初レジストリ直接操作を試したが、GUIの「適用」操作がないと正常に反映されなかったため仕方なくGUI操作。
-echo Configure window animations with GUI
-sysdm.cpl,3
-pause
+
+:: echo Configure window animations with GUI
+:: sysdm.cpl,3
+:: pause
+
+:: 自動で反映できるようになったので以下を追記・置き換え。
+:: いったん各種視覚効果のほとんどを無効化する
+reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v "MinAnimate" /t "REG_DWORD" /d "0" /f
+reg add "HKCU\Control Panel\Desktop" /v "EnableAeroPeek" /t "REG_DWORD" /d "0" /f
+reg add "HKCU\Control Panel\Desktop" /v "AlwaysHibernateThumbnails" /t "REG_DWORD" /d "0" /f
+reg add "HKCU\Control Panel\Desktop" /v "DragFullWindows" /t "REG_DWORD" /d "0" /f
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "IconsOnly" /t "REG_DWORD" /d "0" /f
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ListViewAlphaSelect" /t "REG_DWORD" /d "0" /f
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ListViewShadow" /t "REG_DWORD" /d "0" /f
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarAnimations" /t "REG_DWORD" /d "0" /f
+reg add "HKEY_CURRENT_USERの\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v "NumThumbnails" /t "REG_DWORD" /d "0" /f
+
+:: スタート右クリック -> システム -> 関連リンク システムの詳細設定 -> システムのプロパティ 詳細設定タブ -> 「パフォーマンス」の設定ボタン -> 「視覚効果」タブ を「カスタム」に
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v "VisualFXSetting" /t "REG_DWORD" /d "3" /f
+
+:: 「スクリーンフォントの縁を滑らかにする」をオンに戻す。
+:: これで「アイコンの代わりに縮小版を表示する」と「タスクバーの縮小版のプレビューを保存する」含めた3項目のみ有効となる
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothing" /t "REG_SZ" /d "2" /f
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingGamma" /t "REG_DWORD" /d "0" /f
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingOrientation" /t "REG_DWORD" /d "1" /f
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingType" /t "REG_DWORD" /d "2" /f
+
+:: 上記設定と整合するようにバイナリの値を設定する
+reg add "HKCU\Control Panel\Desktop" /v "UserPreferencesMask" /t "REG_BINARY" /d "9012038010000000" /f
 
 :: Networking
 :: Windows Firewall
