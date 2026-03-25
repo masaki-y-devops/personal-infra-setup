@@ -1,4 +1,4 @@
-### 作成経緯
+## 作成経緯
 お気に入りのアニメの更新や、趣味で読んでいるブログなどで、RSSに対応していないサイトがよくある。
 
 RSS対応のサイトであれば、Feedlyや、セルフホストならFreshRSSという選択肢があるが、動的なサイトでRSSに対応しないサイトも増えてきた。
@@ -7,7 +7,7 @@ RSS対応のサイトであれば、Feedlyや、セルフホストならFreshRSS
 
 サイト側のポリシーでスクレイピングを禁止していたり、robots.txtで明示しているサイトを監視しないようにして、確認頻度についても、10分に一回など、節度ある利用を心掛けた。
 
-### 構成要素と選定理由
+## 構成要素と選定理由
 
 - AWS Lightsail 2GBメモリ
 
@@ -26,7 +26,7 @@ RSS対応のサイトであれば、Feedlyや、セルフホストならFreshRSS
 →　プライベート用なので外部開放するのは必要性がなく、セキュリティー的に不正アクセスの足掛かりになりうるので気を付けた。
 　　サーバーと同一のtailnetに自分のクライアント端末を参加させて利用する。ACLも設定する。
 
-### 具体的な手順
+## 具体的な手順
 
 (1) 下記を確認し、スタートアップスクリプトとして実行。
 
@@ -116,7 +116,7 @@ sudo systemctl enable customfw
 ~~~
 
 curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up  ##実行後、Webコンソールで承認＋disable expiration＋マシンネーム変更（注：まだACLタグつけない）
+sudo tailscale up ##実行後、Webコンソールで承認＋disable expiration＋マシンネーム変更（注：まだACLタグつけない）
 
 ~~~
 
@@ -138,7 +138,6 @@ echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] 
 sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io -y
 sudo usermod -aG docker ubuntu   ## 忘れがちなので注意。逆にしない。ubuntuをdockerグループに追加。
-
 ~~~
 
 
@@ -159,7 +158,7 @@ services:
         hostname: changedetection
         volumes:
             - changedetection-data:/datastore
-        environment:       　　　## comment out  忘れそうなので注意
+        environment:                        ## コメントアウトする
              - PLAYWRIGHT_DRIVER_URL=ws://browser-sockpuppet-chrome:3000
         ports:
             - 127.0.0.1:5000:5000
@@ -246,9 +245,9 @@ sudo nano /etc/apache2/sites-available/default-ssl.conf
 
 <VirtualHost *.443>
     ...
-    ProxyPreverveHost On
-    ProxyPass / http://127.0.0.1:5000/                    ## 末尾の"/"を付けないとURLが正しく渡されず名前解決でエラーとなるので注意
-    ProxyPassReverse / http://127.0.0.1:5000/        ## 同上
+    ProxyPreserveHost On
+    ProxyPass / http://127.0.0.1:5000/ ## 末尾の"/"を付けないとURLが正しく渡されず名前解決でエラーとなるので注意
+    ProxyPassReverse / http://127.0.0.1:5000/ ## 同上
     ...
     SSLEngine on
     ...
@@ -279,8 +278,8 @@ sudo nano /etc/apache2/sites-available/000-default.conf
     ServerAdmin webmaster@localhost
     DocumentRoot /var/www/html
 
-    ErrorLog ...     ## そのまま
-    CustomLog ...　##     そのまま
+    ErrorLog ... ##そのまま
+    CustomLog ... ##そのまま
 </VirtualHost>
 ~~~
 
@@ -310,8 +309,8 @@ ServerSignature Off
 - 上記設定を反映する
 
 ~~~
-sudo s2dissite 000-default
-sudo s2ensite 000-default
+sudo a2dissite 000-default
+sudo a2ensite 000-default
 sudo a2ensite default-ssl
 sudo a2disconf security
 sudo a2enconf security
@@ -321,7 +320,7 @@ sudo systemctl restart apache2
 
 - ここまで終わったらクライアントのブラウザからテストページが表示されるか動作確認する
 
-(11) apacheがtailscaleより先に立ち上がって自身のipを見失う問題の対策をしておく。
+(11) apacheがtailscaleより先に立ち上がって自身のIPアドレスを見失う問題の対策をしておく。
 
 構築初期に、深夜のアップデート後、朝起きてクライアントからアクセスすると、サービスが止まっているのを確認。
 
@@ -342,7 +341,7 @@ sudo systemctl edit apache2
 Restart=always
 ~~~
 
-- systemdが再起動を試行する場合、1秒おきに1000回まで試行させる。 https://tex2e.github.io/blog/linux/systemd-restart-configを参照
+- systemdが再起動を試行する場合、1秒おきに1000回まで試行させる。 https://tex2e.github.io/blog/linux/systemd-restart-config　が参考になった。
 
 1000という数字に特段の意味はないが、「十分な時間的猶予がある回数」として設定した。
 
@@ -355,7 +354,7 @@ DefaultStartLimitIntervalSec=1s
 DefaultStartLimitBurst=1000
 ~~~
 
-- clientpcでhttps://cdio.tailXXXXXX.ts.netにアクセスしてテストする
+- 手元のクライアント端末で```https://cdio.tailXXXXXX.ts.net```にアクセスしてみる
 
 (12) 各種自動アップデート設定
 
@@ -427,7 +426,7 @@ sudo chmod 700 /usr/local/bin/restartdocker.sh
 ~~~
 
 ~~~
-sudo nano /etc/systemd/system/retsartdocker.service
+sudo nano /etc/systemd/system/restartdocker.service
 
 [Unit]
 After=apache2.service
@@ -440,7 +439,7 @@ WantedBy=multi-user.target
 ~~~
 
 ~~~
-sudo systemctl enable restartdocker
+sudo systemctl enable restartdocker.service
 ~~~
 
 ~~~
