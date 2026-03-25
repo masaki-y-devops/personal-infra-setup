@@ -104,7 +104,7 @@ ExecStart=/usr/local/bin/customfw.sh
 WantedBy=multi-user.target
 SYSD
 
-sudo systemctl enable customfw
+sudo systemctl enable customfw.service
 ~~~
 
 (2) termuxからubuntu@public-ipとしてsshログイン
@@ -114,21 +114,22 @@ sudo systemctl enable customfw
 (3) インスタンスにtailscaleをインストール
 
 ~~~
-
 curl -fsSL https://tailscale.com/install.sh | sh
-sudo tailscale up ##実行後、Webコンソールで承認＋disable expiration＋マシンネーム変更（注：まだACLタグつけない）
+sudo tailscale up
 
+## up実行後、Webコンソールで承認＋承認の有効期限無効化＋マシンネーム変更
+## ACLを設定している場合は、ロックアウトを防ぐためACLタグをつけない
 ~~~
 
-(4) いったんパブリックIPでのSSHセッションを「切断してから」、ACL tagをserverに設定（お好みで。）
+(4) いったんパブリックIPでのSSHセッションを「切断してから」、ACL tagを疎通可能なタグに設定する。
 
-(5) ubuntu@freshrss（さきほどtailscaleで設定したノード名）でssh接続しなおす
+(5) ubuntu@cdio（さきほどtailscaleで設定したノード名）でssh接続しなおす
 
 (6) SSHのListen Addressをtailscale割り当ての IPに変更する、”PermitRootLogin”などの各種オプションも、ついでにnoに書き換えておく。
 
-(7) 再起動後、ubuntu@freshrssではログインできるがubuntu@publicipではログインできないことを確認
+(7) 再起動後、ubuntu@cdioではログインできるがubuntu@<パブリックIP>ではログインできないことを確認
 
-(8) ubuntuにdocker一式を導入 https://qiita.com/taka777n/items/ea3a1b3a2802aabf3db2
+(8) ubuntuにDocker一式を導入 https://qiita.com/taka777n/items/ea3a1b3a2802aabf3db2
 
 ~~~
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
