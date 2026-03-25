@@ -488,10 +488,10 @@ sudo reboot
     - General
         - time between check -> 1 hour
       - random jitter seconds +- check -> 5 secconds
-      - password -> bwでセット
+      - password
       - extract <title> from document and use as watch title -> checked
     - Notifications
-        - Notifications URL list -> bwからコピー
+        - Notifications URL list
         - Notification title ->cd.io - {{watch_title}}({{watch_url}})
         - Notification body -> (
                 {{watch_title}} had a change.
