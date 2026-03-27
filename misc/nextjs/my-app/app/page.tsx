@@ -22,6 +22,7 @@ export default function Home() {
     { name: "Next.js / React", level: "Learning" },
     { name: "Tailwind CSS", level: "Beginner" },
 	{ name: "OCI", level: "Beginner" },
+	{ name: "AWS", level: "Beginner" },
   ];
 
   return (
