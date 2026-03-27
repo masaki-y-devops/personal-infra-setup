@@ -1,8 +1,18 @@
 "use client";
-import { useState, useEffect } from "react"; // 1. 状態管理の道具をインポート
+import { useState, useEffect } from "react";
+
+// GitHub APIから返ってくるデータの「形」を定義する
+interface GitHubRepo {
+  id: number;
+  name: string;
+  html_url: string;
+  description: string | null; // 説明文は空(null)の場合もあるという定義
+  stargazers_count: number;
+  language: string | null;
+}
 
 export default function Home() {
-	const [repos, setRepos] = useState([]); // 2. 取得したリポジトリを入れる箱
+	const [repos, setRepos] = useState<GitHubRepo[]>([]);
 	
 	// 3. GitHub APIを叩く関数（インフラでいう curl コマンドのJavaScript版）
   useEffect(() => {
@@ -21,8 +31,8 @@ export default function Home() {
     { name: "Docker / K8s", level: "Intermediate" },
     { name: "Next.js / React", level: "Learning" },
     { name: "Tailwind CSS", level: "Beginner" },
-	{ name: "OCI", level: "Beginner" },
-	{ name: "AWS", level: "Beginner" },
+	  { name: "OCI", level: "Beginner" },
+	  { name: "AWS", level: "Beginner" },
   ];
 
   return (
@@ -63,7 +73,7 @@ export default function Home() {
 		<section className="mt-12">
           <h2 className="text-xl font-bold mb-6 border-b-2 border-indigo-200 pb-2">GitHub Repositories</h2>
           <div className="grid grid-cols-1 gap-4">
-            {repos.map((repo: any) => (
+            {repos.map((repo: GitHubRepo) => (
               <a 
                 key={repo.id} 
                 href={repo.html_url} 
@@ -78,6 +88,28 @@ export default function Home() {
           </div>
         </section>
       </div>
+	  
+	  {/* --- お問い合わせセクション --- */}
+        <section className="mt-12 bg-indigo-50 p-8 rounded-2xl border border-indigo-100">
+          <h2 className="text-xl font-bold mb-4 text-indigo-900">Contact Me</h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-indigo-700">お名前</label>
+              <input 
+                type="text" 
+                placeholder="エンジニア 太郎"
+                className="w-full mt-1 p-2 rounded-md border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                onChange={(e) => console.log("入力中:", e.target.value)} 
+              />
+            </div>
+            <button 
+              onClick={() => alert("送信機能はバックエンド構築時に実装予定です！")}
+              className="w-full bg-indigo-600 text-white py-2 rounded-md font-bold hover:bg-indigo-700 transition-all shadow-lg active:scale-95"
+            >
+              メッセージを送る（モック）
+            </button>
+          </div>
+        </section>
     </main>
   );
 }
