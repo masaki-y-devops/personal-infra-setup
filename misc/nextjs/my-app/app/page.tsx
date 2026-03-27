@@ -1,39 +1,49 @@
 "use client";
 
 export default function Home() {
+  // 1. あなたのスキルセットを「データ」として定義
+  const skills = [
+    { name: "Linux / Shell", level: "Advanced", color: "bg-slate-800" },
+    { name: "Docker / K8s", level: "Intermediate", color: "bg-blue-600" },
+    { name: "Next.js / React", level: "Learning", color: "bg-black" },
+    { name: "Tailwind CSS", level: "Beginner", color: "bg-cyan-500" },
+    { name: "Vercel / CI/CD", level: "Beginner", color: "bg-indigo-500" },
+  ];
+
   return (
-    // min-h-screen: 画面全体の高さ / bg-slate-50: 薄いグレーの背景 / bg-orange-100
-    <main className="min-h-screen bg-orange-100 p-8">
-      
-      {/* max-w-2xl: 幅を制限 / mx-auto: 中央寄せ / bg-white: 白背景 / rounded-xl: 角丸 / shadow-lg: 影 */}
-      <div className="max-w-2xl mx-auto bg-white p-10 rounded-xl shadow-lg border border-slate-200">
-        
-        {/* text-3xl: 文字サイズ / font-bold: 太字 / text-indigo-600: 濃い青紫 */}
-        <h1 className="text-3xl font-bold text-indigo-600 mb-4">
-          My Frontend Journey
-        </h1>
-        
-        <p className="text-slate-600 mb-6 leading-relaxed">
-          インフラエンジニアからフロントエンドへ。
-          Next.js と Tailwind CSS で構築した最初のポートフォリオです。
-        </p>
+    <main className="min-h-screen bg-slate-50 p-8 text-slate-900">
+      <div className="max-w-3xl mx-auto">
+        <header className="mb-12 text-center">
+          <h1 className="text-4xl font-extrabold text-indigo-700 mb-2">Engineer Portfolio</h1>
+          <p className="text-slate-500">Infrastructure & Frontend Journey</p>
+        </header>
 
-        {/* Flexboxで横並び: gap-4で間隔をあける */}
-        <div className="flex gap-4">
-          <button 
-            onClick={() => alert('Deployed on Vercel!')}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-          >
-            Vercelの状態を確認
-          </button>
+        <section>
+          <h2 className="text-xl font-bold mb-6 border-b-2 border-indigo-200 pb-2">Technical Skills</h2>
+          
+          {/* 2. グリッドレイアウト（レスポンシブ：スマホ1列、PC2列） */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            
+            {/* 3. 配列(skills)をループしてカードを生成 */}
+            {skills.map((skill) => (
+              <div key={skill.name} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold">{skill.name}</h3>
+                  <p className="text-xs text-slate-400">{skill.level}</p>
+                </div>
+                {/* 動的に色を変える */}
+                <span className={`px-3 py-1 rounded-full text-white text-xs ${skill.color}`}>
+                  Active
+                </span>
+              </div>
+            ))}
 
-          <button 
-            className="px-6 py-2 border border-slate-300 text-slate-600 rounded-lg font-medium hover:bg-slate-50 transition-colors"
-          >
-            GitHubを見る
-          </button>
+          </div>
+        </section>
+
+        <footer className="mt-12 text-center text-slate-400 text-sm">
+          <p>© 2024 Built with Next.js & Vercel</p>
         </div>
-
       </div>
     </main>
   );
