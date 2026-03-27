@@ -32,9 +32,13 @@ export default function Home() {
                   <p className="text-xs text-slate-400">{skill.level}</p>
                 </div>
                 {/* 動的に色を変える */}
-                <span className={`px-3 py-1 rounded-full text-white text-xs ${skill.color}`}>
-                  Active
-                </span>
+                <span className={`px-3 py-1 rounded-full text-white text-xs ${
+					skill.level === "Advanced" ? "bg-red-500" : 
+					skill.level === "Intermediate" ? "bg-blue-500" : 
+					"bg-slate-400"
+				}`}>
+					{skill.level}
+				</span>
               </div>
             ))}
 
@@ -43,7 +47,7 @@ export default function Home() {
 
         <footer className="mt-12 text-center text-slate-400 text-sm">
           <p>© 2024 Built with Next.js & Vercel</p>
-        </div>
+        </footer>
       </div>
     </main>
   );
