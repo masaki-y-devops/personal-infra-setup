@@ -2,8 +2,8 @@
 
 export default function Home() {
   return (
-    // min-h-screen: 画面全体の高さ / bg-slate-50: 薄いグレーの背景
-    <main className="min-h-screen bg-slate-50 p-8">
+    // min-h-screen: 画面全体の高さ / bg-slate-50: 薄いグレーの背景 / bg-orange-100
+    <main className="min-h-screen bg-orange-100 p-8">
       
       {/* max-w-2xl: 幅を制限 / mx-auto: 中央寄せ / bg-white: 白背景 / rounded-xl: 角丸 / shadow-lg: 影 */}
       <div className="max-w-2xl mx-auto bg-white p-10 rounded-xl shadow-lg border border-slate-200">
