@@ -45,7 +45,7 @@ export default function Home() {
 
         <section>
           <h2 className="text-xl font-bold mb-6 border-b-2 border-indigo-200 pb-2">Technical Skills</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             
             {/* 2. mapを使ってループ処理 */}
             {skills.map((skill) => (
@@ -58,19 +58,18 @@ export default function Home() {
                 <span className={`px-3 py-1 rounded-full text-white text-xs font-bold ${
                   skill.level === "Advanced" ? "bg-red-500" : 
                   skill.level === "Intermediate" ? "bg-green-500" : 
-				  skill.level === "Learning" ? "bg-blue-500" :
+				          skill.level === "Learning" ? "bg-blue-500" :
                   "bg-slate-400"
                 }`}>
                   {skill.level}
                 </span>
-
               </div>
             ))}
 
           </div>
         </section>
 		
-		<section className="mt-12">
+		    <section className="mt-12">
           <h2 className="text-xl font-bold mb-6 border-b-2 border-indigo-200 pb-2">GitHub Repositories</h2>
           <div className="grid grid-cols-1 gap-4">
             {repos.map((repo: GitHubRepo) => (
