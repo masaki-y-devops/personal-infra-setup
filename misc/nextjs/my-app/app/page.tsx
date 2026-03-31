@@ -27,10 +27,11 @@ export default function Home() {
   
   // 1. スキルデータの配列（ここに新しいスキルを追加すれば自動で増えます）
   const skills = [
-    { name: "Linux / Shell", level: "Advanced" },
-    { name: "Docker / K8s", level: "Intermediate" },
+    { name: "Linux / Shell", level: "Intermediate" },
+    { name: "Docker / K8s", level: "Learning" },
     { name: "Next.js / React", level: "Learning" },
     { name: "Tailwind CSS", level: "Beginner" },
+    { name: "Python", level: "Beginner" },
 	  { name: "OCI", level: "Beginner" },
 	  { name: "AWS", level: "Beginner" },
   ];
@@ -81,7 +82,7 @@ export default function Home() {
               >
                 <h3 className="font-bold text-indigo-600">{repo.name}</h3>
                 <p className="text-sm text-slate-500">{repo.description || "No description"}</p>
-                <div className="mt-2 text-xs text-slate-400">⭐ {repo.stargazers_count} | Language: {repo.language}</div>
+                <div className="mt-2 text-xs text-slate-400">Language: {repo.language}</div>
               </a>
             ))}
           </div>
@@ -96,7 +97,7 @@ export default function Home() {
               <label className="block text-sm font-medium text-indigo-700">お名前</label>
               <input 
                 type="text" 
-                placeholder="エンジニア 太郎"
+                placeholder="お名前を入力してください"
                 className="w-full mt-1 p-2 rounded-md border border-indigo-200 focus:ring-2 focus:ring-indigo-500 outline-none"
                 onChange={(e) => console.log("入力中:", e.target.value)} 
               />
