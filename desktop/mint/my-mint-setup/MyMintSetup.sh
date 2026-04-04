@@ -36,15 +36,21 @@ rotationfix() {
 }
 
 HOST=$(cat /etc/hostname | grep -o -e "micropc" -e "win1" -e "pocket") ## check hostname
-if [ "${HOST}" = "micropc" ]; then
-	rotationfix
-elif [ "${HOST}" = "win1" ]; then
-    rotationfix
-elif [ "${HOST}" = "pocket" ]; then
-	rotationfix
-else
-	: 
-fi
+
+case "${HOST}" in
+	micropc)
+		rotationfix
+		;;
+	win1)
+		rotationfix
+		;;
+	pocket)
+		rotationfix
+		;;
+	*)
+		: 
+		;;
+esac
 
 ## updates
 sudo apt update && sudo apt upgrade -y
