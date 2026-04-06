@@ -24,11 +24,16 @@ Manjaroライブ環境からinstall.sh実行で自分専用の環境構築を完
 端末で、
 
 ~~~
-chmod +x ./install.sh
-./install.sh
+~~chmod +x ./install.sh
+./install.sh~~
+
+cd /path/to/dir ## install.sh保存ディレクトリへ移動
+sudo ./install.sh
 ~~~
 
 を実行して再起動すれば完了します。
+
+**追記：実行にroot権限なため修正。ユーザーへの実行権限付与は任意でいいと思われます。**
 
 ### 主なトラブルシューティング
 
@@ -80,11 +85,16 @@ Arch用スクリプトと同様に、
 端末で、
 
 ~~~
-chmod +x ./install.sh
-./install.sh
+~~chmod +x ./install.sh~~
+~~./install.sh~~
+
+cd /path/to/dir ## install.sh保存ディレクトリへ移動
+sudo ./install.sh
 ~~~
 
 を実行して再起動すれば完了します。
+
+**追記：実行にroot権限なため修正。ユーザーへの実行権限付与は任意でいいと思われます。**
 
 ### 主なトラブルシューティング
 
