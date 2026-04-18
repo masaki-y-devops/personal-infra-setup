@@ -1,6 +1,7 @@
 @echo off
 
-:: 個人的に使わないUWPアプリの非表示。
+:: UWP 
+:: 一つ一つ明示的に指定して消す場合
 for %%a in (
 	Clipchamp.Clipchamp Microsoft.WindowsNotepad ^
 	Microsoft.BingNews Microsoft.BingWeather Microsoft.MicrosoftOfficeHub Microsoft.MicrosoftSolitaireCollection ^
@@ -15,11 +16,14 @@ for %%a in (
 	powershell "get-appxpackage -allusers %%a | remove-appxpackage 2>$null"
 )
 
-:: 以下は非推奨と感じたのでコメントアウト（Microsoft StoreとNVIDIAコントロールパネルは残るが、ローカルアカウント環境でUWPアプリの再インストールが不可となる）
+:: Store,Xbox関連だけを残す場合
 :: echo Hide All UWP apps except NVIDIA,Intel,AMD related one and Microsoft Store, Xbox dependencies
 :: powershell "get-appxpackage -allusers | where-object {$_.name -notlike '*NVIDIA*' -and $_.name -notlike '*Intel*' -and $_.name -notlike '*AMD*' -and $_.name -notlike '*Store*' -and $_.name -notlike '*Runtime*' -and $_.name -notlike '*NET.Native*' -and $_.name -notlike '*VCLibs*' -and $_.name -notlike '*UI.Xaml*' -and $_.name -notlike '*UWP*' -and $_.name -notlike '*xbox*'} | remove-appxpackage 2>$null"
+:: timeout 1
 
-timeout 1
+:: Store,Xbox関連含めて全部消す場合
+:: powershell "get-appxpackage -allusers | where-object {$_.name -notlike '*NVIDIA*' -and $_.name -notlike '*Intel*' -and $_.name -notlike '*AMD*'} | remove-appxpackage 2>$null"
+:: timeout 1
 
 :: Game Bar
 echo Uninstalling GameBar
@@ -31,21 +35,22 @@ reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t "REG_DWORD" /d "0"
 timeout 1
 
 :: Remove ms-gamebar popup
-reg add HKCR\ms-gamebar /f /ve /d URL:ms-gamebar 2>&1 >''
+:: https://www.reddit.com/r/Windows11/comments/zwmeew/is_there_a_way_to_disable_this_blasted_msgamebar/
+reg add HKCR\ms-gamebar /f /ve /d URL:ms-gamebar
 timeout 1
-reg add HKCR\ms-gamebar /f /v "URL Protocol" /d "" 2>&1 >''
+reg add HKCR\ms-gamebar /f /v "URL Protocol" /d ""
 timeout 1
-reg add HKCR\ms-gamebar /f /v "NoOpenWith" /d "" 2>&1 >''
+reg add HKCR\ms-gamebar /f /v "NoOpenWith" /d ""
 timeout 1
-reg add HKCR\ms-gamebar\shell\open\command /f /ve /d "\\"$env:SystemRoot\System32\systray.exe\"" 2>&1 >''
+reg add HKCR\ms-gamebar\shell\open\command /f /ve /d "\\"$env:SystemRoot\System32\systray.exe\""
 timeout 1
-reg add HKCR\ms-gamebarservices /f /ve /d URL:ms-gamebarservices 2>&1 >''
+reg add HKCR\ms-gamebarservices /f /ve /d URL:ms-gamebarservices
 timeout 1
-reg add HKCR\ms-gamebarservices /f /v "URL Protocol" /d "" 2>&1 >''
+reg add HKCR\ms-gamebarservices /f /v "URL Protocol" /d ""
 timeout 1
-reg add HKCR\ms-gamebarservices /f /v "NoOpenWith" /d "" 2>&1 >''
+reg add HKCR\ms-gamebarservices /f /v "NoOpenWith" /d ""
 timeout 1
-reg add HKCR\ms-gamebarservices\shell\open\command /f /ve /d "\\"$env:SystemRoot\System32\systray.exe\"" 2>&1 >''
+reg add HKCR\ms-gamebarservices\shell\open\command /f /ve /d "\\"$env:SystemRoot\System32\systray.exe\""
 timeout 1
 
 :: OneDrive
