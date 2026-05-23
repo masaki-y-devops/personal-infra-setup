@@ -508,7 +508,8 @@ for %%a in (
 	FreeTube.FreeTube ^
 	shinchiro.mpv ^
 	jurplel.qview ^
-	git.git
+	git.git ^
+	OpenJS.NodeJS
 ) do (
 	echo Installing %%a...
 	echo y | winget install %%a -h --accept-source-agreements --accept-package-agreements
