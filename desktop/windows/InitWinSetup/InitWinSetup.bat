@@ -1,41 +1,272 @@
+<# :
 @echo off
 
-:: UWP 
-:: 一つ一つ明示的に指定して消す場合
-for %%a in (
-	Clipchamp.Clipchamp Microsoft.WindowsNotepad ^
-	Microsoft.BingNews Microsoft.BingWeather Microsoft.MicrosoftOfficeHub Microsoft.MicrosoftSolitaireCollection ^
-	MicrosoftTeams Microsoft.YourPhone Microsoft.Todos microsoft.windowscommunicationsapps Microsoft.ZuneMusic ^
-	Microsoft.ZuneVideo Microsoft.WindowsMaps Microsoft.GetHelp Microsoft.WindowsFeedbackHub Microsoft.WindowsCamera ^
-	Microsoft.WindowsSoundRecorder Microsoft.Paint Microsoft.MicrosoftStickyNotes Microsoft.OutlookForWindows ^
-	Microsoft.WindowsAlarms Microsoft.WindowsCalculator Microsoft.Windows.Photos MicrosoftCorporationII.QuickAssist ^
-	Microsoft.ScreenSketch Microsoft.People Microsoft.PowerAutomateDesktop Microsoft.Whiteboard Microsoft.MixedReality.Portal ^
-	Microsoft.OneConnect Microsoft.Xbox.TCUI Microsoft.549981C3F5F10 MSTeams Microsoft.Copilot ^
-	Microsoft.Windows.DevHome MicrosoftWindows.CrossDevice
-) do (
-	powershell "get-appxpackage -allusers %%a | remove-appxpackage 2>$null"
+:: Check Admin privileges
+:: https://blog.treedown.net/entry/2024/01/25/010000
+whoami /priv | find "SeSystemtimePrivilege" > nul
+if %errorlevel% neq 0 (
+	echo No Administrator privileges. Aborted.
+	echo Right click this script and Choose "Run as Administrator".
+	pause
+	exit 1
 )
 
-:: Store,Xbox関連だけを残す場合
-:: echo Hide All UWP apps except NVIDIA,Intel,AMD related one and Microsoft Store, Xbox dependencies
-:: powershell "get-appxpackage -allusers | where-object {$_.name -notlike '*NVIDIA*' -and $_.name -notlike '*Intel*' -and $_.name -notlike '*AMD*' -and $_.name -notlike '*Store*' -and $_.name -notlike '*Runtime*' -and $_.name -notlike '*NET.Native*' -and $_.name -notlike '*VCLibs*' -and $_.name -notlike '*UI.Xaml*' -and $_.name -notlike '*UWP*' -and $_.name -notlike '*xbox*'} | remove-appxpackage 2>$null"
-:: timeout 1
+::::::::::::::
+:: PowerCfg ::
+::::::::::::::
 
-:: Store,Xbox関連含めて全部消す場合
-:: powershell "get-appxpackage -allusers | where-object {$_.name -notlike '*NVIDIA*' -and $_.name -notlike '*Intel*' -and $_.name -notlike '*AMD*'} | remove-appxpackage 2>$null"
-:: timeout 1
+:: Disable all sleep timeout
+for %%a in (
+	monitor-timeout-dc monitor-timeout-ac ^
+	disk-timeout-dc disk-timeout-ac ^
+	standby-timeout-ac standby-timeout-dc ^
+	hibernate-timeout-ac hibernate-timeout-dc
+) do (
+	echo Changing %%a timeout to never...
+	powercfg /change %%a 0
+	timeout 1
+)
 
-:: Game Bar
-echo Uninstalling GameBar
-powershell "Get-AppxPackage -AllUsers -PackageTypeFilter Bundle -Name '*Microsoft.XboxGamingOverlay*' | Remove-AppxPackage -AllUsers 2>$null"
+:: Disable network standby in sleep mode
+powercfg /setdcvalueindex scheme_current sub_none F15576E8-98B7-4186-B944-EAFA664402D9 0
 timeout 1
-reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR" /t "REG_DWORD" /v "AppCaptureEnabled" /d "0" /f
-timeout 1
-reg add "HKCU\System\GameConfigStore" /v "GameDVR_Enabled" /t "REG_DWORD" /d "0" /f
+powercfg /setacvalueindex scheme_current sub_none F15576E8-98B7-4186-B944-EAFA664402D9 0
 timeout 1
 
-:: Remove ms-gamebar popup
-:: https://www.reddit.com/r/Windows11/comments/zwmeew/is_there_a_way_to_disable_this_blasted_msgamebar/
+:: Setting System Cooling Policy to Active
+powercfg /SETDCVALUEINDEX SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
+timeout 1
+powercfg /SETACVALUEINDEX SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
+timeout 1
+
+:: Setting CPU max speed
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX 100
+timeout 1
+powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX 100
+timeout 1
+
+:: Setting CPU min speed
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5
+timeout 1
+powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5
+timeout 1
+
+:: Go sleep mode when power button is pressed
+powercfg /setdcvalueindex SCHEME_CURRENT 4f971e89-eebd-4455-a8de-9e59040e7347 7648efa3-dd9c-4e3e-b566-50f929386280 1
+timeout 1
+powercfg /setacvalueindex SCHEME_CURRENT 4f971e89-eebd-4455-a8de-9e59040e7347 7648efa3-dd9c-4e3e-b566-50f929386280 1
+timeout 1
+
+:::::::::::::
+:: regedit ::
+:::::::::::::
+
+:: show battery percentage in taskbar
+:: https://www.elevenforum.com/t/enable-or-disable-show-battery-percentage-on-taskbar-in-windows-11.32691/
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "IsBatteryPercentageEnabled" /t "REG_DWORD" /d "1" /f
+
+:: remove duplicate removable drives in explorer side bar
+:: https://www.elevenforum.com/t/add-or-remove-duplicate-drives-in-navigation-pane-of-file-explorer-in-windows-11.3043/
+reg add "HKCU\Software\Classes\WOW6432Node\CLSID\{F5FB2C77-0E2F-4A16-A381-3E560C68BC83}\ShellFolder" /v "Attributes" /t REG_DWORD /d 0xb0100000 /f
+timeout 1
+reg add "HKCU\Software\Classes\CLSID\{F5FB2C77-0E2F-4A16-A381-3E560C68BC83}\ShellFolder" /v "Attributes" /t REG_DWORD /d 0xb0100000 /f
+timeout 1
+
+:: enable sudo, inline
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Sudo" /v "Enabled" /t "REG_DWORD" /d "3" /f
+timeout 1
+
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v "HiberbootEnabled" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance" /v "fAllowToGetHelp" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable Windows Spotlight
+reg add "HKCU\Software\Policies\Microsoft\Windows\CloudContent" /v "DisableSpotlightCollectionOnDesktop" /t "REG_DWORD" /d "1" /f
+timeout 1
+
+:: Disable Tips on Lockscreen
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "RotatingLockScreenOverlayEnabled" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-338387Enabled" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Removing "Home" tab in Settings App
+reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "SettingsPageVisibility" /t "REG_SZ" /d "hide:home" /f
+timeout 1
+
+:: Disable Windows Search Highlights
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "EnableDynamicContentInWSB" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable Recent Files from Start Menu
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_TrackDocs" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable Recommendations in Start Menu
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_IrisRecommendations" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable recommended recent apps in start menu
+:: https://www.elevenforum.com/t/add-or-remove-recently-added-apps-on-start-menu-in-windows-11.1157/
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Start" /v "ShowRecentList" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable recommended website
+reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v "HideRecommendedPersonalizedSites" /t "REG_DWORD" /d "1" /f
+timeout 1
+
+:: Disable Account related notifications
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_AccountNotifications" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable Lets finish setup your PC
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement" /v "ScoobeSystemSettingEnabled" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable Web search on start menu
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable PC Gaming notifications
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "DisableGameNotifications" /t "REG_DWORD" /d "1" /f
+timeout 1
+reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SoftLandingEnabled" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: disable window transparency 
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "EnableTransparency" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: move start menu to left side
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarAl" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Never combine taskbar button and hide labels
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarGlomLevel" /t "REG_DWORD" /d "2" /f
+timeout 1
+
+:: Use small taskbar icons
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "IconSizePreference" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: disable task view
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowTaskViewButton" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable Taskbar Widgets
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: disable chat button
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Chat" /f
+timeout 1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Chat" /v "ChatIcon" /t "REG_DWORD" /d "3" /f
+timeout 1
+
+:: disable search box
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "SearchboxTaskbarMode" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable tablet-optimized-taskbar-in-windows-11
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ExpandableTaskbar" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable touch keyboard
+reg add "HKCU\SOFTWARE\Microsoft\TabletTip\1.7" /v "TipbandDesiredVisibility" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKCU\SOFTWARE\Microsoft\TabletTip\1.7" /v "EnableDesktopModeAutoInvoke" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKCU\SOFTWARE\Microsoft\TabletTip\1.7" /v "TouchKeyboardTapInvoke" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Disable Tablet Mode
+reg add "HKLM\System\CurrentControlSet\Control\PriorityControl" /v "ConvertibilityEnabled" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Remove Add to Favorites option on rigth-click Menu
+reg add "HKEY_CLASSES_ROOT\*\shell\pintohomefile" /v "ProgrammaticAccessOnly" /t "REG_SZ" /f
+timeout 1
+
+:: Remove Ask Copilot from right-click menu
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked" /v "{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}" /t "REG_SZ" /d "Ask Copilot" /f
+timeout 1
+
+:: Revert Right Click Menu
+reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve
+timeout 1
+
+:: Remove Cast from Right-Click Menu
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked" /v "{7AD84985-87B4-4a16-BE58-8B72A5B390F7}" /t "REG_SZ" /f
+timeout 1
+
+:: disable frequent folders in quick access in windows11
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer" /v "ShowFrequent" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: disable recently opend items in file explorer
+reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoRecentDocsHistory" /t "REG_DWORD" /d "1" /f
+timeout 1
+
+:: remove quick access,home,gallery in navigation pane of file explorer
+reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Explorer" /v "HubMode" /t "REG_DWORD" /d "1" /f
+timeout 1
+reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}" /f
+timeout 1
+reg add "HKCU\Software\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}" /v "System.IsPinnedToNameSpaceTree" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Removing Office.com files in Quick Access
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer" /v "ShowCloudFilesInQuickAccess" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Removing Network button on Navigation Pane in explorer 
+reg add "HKCU\Software\Classes\CLSID\{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}" /v "System.IsPinnedToNameSpaceTree" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Remove Home on explorer sidebar
+reg add "HKCU\Software\Classes\CLSID\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}" /v "System.IsPinnedToNameSpaceTree" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem" /v "LongPathsEnabled" /t "REG_DWORD" /d "1" /f
+timeout 1
+
+:: enable network standby entry in registry
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\f15576e8-98b7-4186-b944-eafa664402d9" /v "Attributes" /t "REG_DWORD" /d "2" /f
+timeout 1
+
+:: enable system cooling policy entry in registry
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\94d3a615-a899-4ac5-ae2b-e4d8f634367f" ^
+/v "Attributes" /t "REG_DWORD" /d "2" /f
+timeout 1
+
+:: Enable taskkill button on taskbar
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings" /v "TaskbarEndTask" /t "REG_DWORD" /d "1" /f
+timeout 1
+
+:: Enable notification bell icons
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowNotificationIcon" /t "REG_DWORD" /d "1" /f
+timeout 1
+
+:: Set Startup Delay to 1sec
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" /v "Startupdelayinmsec" /t "REG_DWORD" /d "1" /f
+
+:: show hidden files,extension in explorer
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Hidden" /t "REG_DWORD" /d "1" /f
+timeout 1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideFileExt" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: Always show full path in taskbar
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\CabinetState" /v "FullPath" /t "REG_DWORD" /d "1" /f
+timeout 1
+
+:: show downloads folder when explorer is launched 
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "LaunchTo" /t "REG_DWORD" /d 3 /f
+timeout 1
+
+:: remove "ms-gamebar not found" pop-up when xinput gamepad is connected
 reg add HKCR\ms-gamebar /f /ve /d URL:ms-gamebar
 timeout 1
 reg add HKCR\ms-gamebar /f /v "URL Protocol" /d ""
@@ -53,23 +284,51 @@ timeout 1
 reg add HKCR\ms-gamebarservices\shell\open\command /f /ve /d "\\"$env:SystemRoot\System32\systray.exe\""
 timeout 1
 
-:: OneDrive
-echo Uninstalling OneDrive
-onedrivesetup /uninstall
+:: GUI animations  
+reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v "MinAnimate" /t "REG_DWORD" /d "0" /f
 timeout 1
+reg add "HKCU\Control Panel\Desktop" /v "EnableAeroPeek" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKCU\Control Panel\Desktop" /v "AlwaysHibernateThumbnails" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKCU\Control Panel\Desktop" /v "DragFullWindows" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "IconsOnly" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ListViewAlphaSelect" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ListViewShadow" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarAnimations" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v "VisualFXSetting" /t "REG_DWORD" /d "3" /f
+timeout 1
+
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothing" /t "REG_SZ" /d "2" /f
+timeout 1
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingGamma" /t "REG_DWORD" /d "0" /f
+timeout 1
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingOrientation" /t "REG_DWORD" /d "1" /f
+timeout 1
+reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingType" /t "REG_DWORD" /d "2" /f
+timeout 1
+reg add "HKCU\Control Panel\Desktop" /v "UserPreferencesMask" /t "REG_BINARY" /d "9012038010000000" /f
+timeout 1
+
+:: Disable telemetry 
+reg add "HKLM\Software\Policies\Microsoft\Windows\DataCollection" /v "Allow telemetry" /t "REG_DWORD" /d "0" /f
+timeout 1
+
+:: OneDrive entry
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\RunNotification" /v "StartupTNotiOneDrive" /t "REG_DWORD" /d "0" /f
 timeout 1
 reg delete hkcu\environment /v OneDrive /f
 timeout 1
-:: Remove OneDrive entry from Windows 10 explorer sidebar
 reg add "HKEY_CLASSES_ROOT\CLSID{018D5C66-4533-4307-9B53-224DE2ED1FE6}" /v "System.IsPinnedToNameSpaceTree" /t "REG_DWORD" /d "0" /f
 timeout 1
-rmdir /s /q "c:\Users\%username%\AppData\Local\Microsoft\OneDrive"
-timeout 1
-rmdir /s /q "c:\Users\%username%\OneDrive"
-timeout 1
 
-:: Edge
+:: Edge settings
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "BrowserSignin" /t "REG_DWORD" /d "0" /f
 timeout 1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "EnableMediaRouter" /t "REG_DWORD" /d "0" /f
@@ -79,32 +338,76 @@ timeout 1
 reg add "HKLM\SOFTWARE\Policies\MicrosoftEdge\Main" /v "PreventFirstRunPage" /t "REG_DWORD" /d "1" /f
 timeout 1
 
-:: Services
-echo Disable telemetry 
-reg add "HKLM\Software\Policies\Microsoft\Windows\DataCollection" /v "Allow telemetry" /t "REG_DWORD" /d "0" /f
-timeout 1
+:::::::::::
+:: netsh ::
+:::::::::::
 
-echo Disable unnecessary Services
+:: Windows Firewall
+
+:: refresh
+netsh advfirewall reset
+
+:: Block VLC Cast and Firefox telemetry
+netsh advfirewall firewall add rule name="block-vlc-cast-1900-in" dir=in action=block protocol=UDP remoteport=1900 profile=any
+netsh advfirewall firewall add rule name="block-vlc-cast-1900-out" dir=out action=block protocol=UDP remoteport=1900 profile=any
+netsh advfirewall firewall add rule name="block-vlc-cast-5353-in" dir=in action=block protocol=UDP remoteport=5353 profile=any
+netsh advfirewall firewall add rule name="block-vlc-cast-5353-out" dir=out action=block protocol=UDP remoteport=5353 profile=any
+netsh advfirewall firewall add rule name="block-mozilla-telemetry-in" remoteip=34.107.134.242 dir=in action=block profile=any
+netsh advfirewall firewall add rule name="block-mozilla-telemetry-out" remoteip=34.107.134.242 dir=out action=block profile=any
+
+:: set relatively strict rules
+:: this is not for ProtonVPN-enabled environment as this rule drops WireGuard connection establishments
+::netsh advfirewall firewall add rule name="allow-tcp-80-out" dir=out action=allow protocol=TCP remoteport=80 profile=any
+::netsh advfirewall firewall add rule name="allow-tcp-443-out" dir=out action=allow protocol=TCP remoteport=443 profile=any
+::netsh advfirewall firewall add rule name="allow-tcp-53-out" dir=out action=allow protocol=TCP remoteport=53 profile=any
+::netsh advfirewall firewall add rule name="allow-udp-53-out" dir=out action=allow protocol=UDP remoteport=53 profile=any
+::netsh advfirewall set allprofiles firewallpolicy blockinbound,blockoutbound
+::netsh advfirewall set allprofiles settings unicastresponsetomulticast disable
+::netsh advfirewall set allprofiles state on
+
+:: log settings
+::netsh advfirewall set allprofiles logging maxfilesize 4096
+::netsh advfirewall set allprofiles logging droppedconnections enable
+
+::::::::::::::
+:: Services ::
+::::::::::::::
+
+:: Disable Services
 for %%a in (
-	RasAuto Rasman RemoteAccess RemoteRegistry SessionEnv TermService UmRdpService WinRM ^
-	wlidsvc NcaSvc Pcasvc SSDPSRV upnphost WMPNetworkSvc WerSvc fdPHost FDResPub ^
-	MapsBroker wcncsvc NetLogon diagsvc DPS WdiServiceHost WdiSystemHost seclogon wisvc SysMain DiagTrack
+	lfsvc LanmanWorkstation lmhosts ^
+	RasAuto Rasman RemoteAccess RemoteRegistry ^
+	SessionEnv TermService UmRdpService WinRM ^
+	wlidsvc NcaSvc Pcasvc SSDPSRV upnphost ^
+	WMPNetworkSvc WerSvc fdPHost FDResPub ^
+	MapsBroker wcncsvc NetLogon diagsvc DPS ^
+	WdiServiceHost WdiSystemHost seclogon wisvc SysMain DiagTrack
 ) do (
+	echo Stopping %%a service...
 	net stop %%a & timeout 1 & sc config %%a start=Disabled
 	timeout 1
 )
-timeout 1
 
-:: ScheduledDefrag
-schtasks /change /tn \Microsoft\Windows\Defrag\ScheduledDefrag /DISABLE
-timeout 1
+:: Turn off Location services
+:: https://www.elevenforum.com/t/enable-or-disable-location-services-in-windows-11.3003/
+SystemSettingsAdminFlows.exe SetCamSystemGlobal location 0
+
+:: configure Microsoft Store service to start it as delayed-auto
+sc config InstallService start=delayed-auto
 
 :: OptionalFeatures
 for %%a in (
-	WindowsMediaPlayer WorkFolders-Client Microsoft-RemoteDesktopConnection ^
-	SmbDirect MSRDC-Infrastructure MediaPlayback WCF-Services45 ^
-	WCF-TCP-PortSharing45 SMB1Protocol
+	WindowsMediaPlayer ^
+	WorkFolders-Client ^
+	Microsoft-RemoteDesktopConnection ^
+	SmbDirect ^
+	MSRDC-Infrastructure ^
+	MediaPlayback ^
+	WCF-Services45 ^
+	WCF-TCP-PortSharing45 ^
+	SMB1Protocol
 ) do (
+	echo Stopping %%a optional feature...
 	powershell "disable-windowsoptionalfeature -norestart -online -featurename %%a"
 	timeout 1
 )
@@ -126,320 +429,136 @@ timeout 1
 powershell "Get-WmiObject -Class Win32_NetworkAdapterConfiguration | Where-Object { $_.IPEnabled -eq $true } | ForEach-Object { $_.SetTcpipNetbios(2) }"
 timeout 1
 
-:: Fast Startup
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v "HiberbootEnabled" /t "REG_DWORD" /d "0" /f
-timeout 1
+::::::::::
+:: Apps ::
+::::::::::
 
-:: Remote Assistant
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance" /v "fAllowToGetHelp" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-:: Lock Screen
-echo Disable Windows Spotlight
-reg add "HKCU\Software\Policies\Microsoft\Windows\CloudContent" /v "DisableSpotlightCollectionOnDesktop" /t "REG_DWORD" /d "1" /f
-timeout 1
-
-echo Disable Tips on Lockscreen
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "RotatingLockScreenOverlayEnabled" /t "REG_DWORD" /d "0" /f
-timeout 1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SubscribedContent-338387Enabled" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Removing "Home" tab in Settings App
-reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "SettingsPageVisibility" /t "REG_SZ" /d "hide:home" /f
-timeout 1
-
-:: Windows Search
-echo Disable Windows Search Highlights
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search" /v "EnableDynamicContentInWSB" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-:: Start Menu
-echo Disable Recent Files from Start Menu
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_TrackDocs" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Disable Recommendations in Start Menu
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_IrisRecommendations" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Disable recommended website
-reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v "HideRecommendedPersonalizedSites" /t "REG_DWORD" /d "1" /f
-timeout 1
-
-echo Disable Account related notifications
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Start_AccountNotifications" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Disable Lets finish setup your PC
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement" /v "ScoobeSystemSettingEnabled" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Disable Web search on start menu
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Search" /v "BingSearchEnabled" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-:: Taskbar
-echo Disable PC Gaming notifications
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "DisableGameNotifications" /t "REG_DWORD" /d "1" /f
-timeout 1
-reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager" /v "SoftLandingEnabled" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-:: Window Decorations
-echo disable window transparency 
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v "EnableTransparency" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo move start menu to left side
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarAl" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Never combine taskbar button and hide labels
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarGlomLevel" /t "REG_DWORD" /d "2" /f
-timeout 1
-
-:: echo Use small taskbar icons
-:: reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "IconSizePreference" /t "REG_DWORD" /d "0" /f
-:: timeout 1
-
-echo disable task view
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowTaskViewButton" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Disable Taskbar Widgets
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v "AllowNewsAndInterests" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo disable chat button
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Chat" /f
-timeout 1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Chat" /v "ChatIcon" /t "REG_DWORD" /d "3" /f
-timeout 1
-
-echo disable search box
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Search" /v "SearchboxTaskbarMode" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Disable tablet-optimized-taskbar-in-windows-11
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ExpandableTaskbar" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Disable touch keyboard
-reg add "HKCU\SOFTWARE\Microsoft\TabletTip\1.7" /v "TipbandDesiredVisibility" /t "REG_DWORD" /d "0" /f
-timeout 1
-reg add "HKCU\SOFTWARE\Microsoft\TabletTip\1.7" /v "EnableDesktopModeAutoInvoke" /t "REG_DWORD" /d "0" /f
-timeout 1
-reg add "HKCU\SOFTWARE\Microsoft\TabletTip\1.7" /v "TouchKeyboardTapInvoke" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Disable Tablet Mode
-reg add "HKLM\System\CurrentControlSet\Control\PriorityControl" /v "ConvertibilityEnabled" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-:: Explorer
-echo Remove Add to Favorites option on rigth-click Menu
-reg add "HKEY_CLASSES_ROOT\*\shell\pintohomefile" /v "ProgrammaticAccessOnly" /t "REG_SZ" /f
-timeout 1
-
-echo Remove Ask Copilot from right-click menu
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked" /v "{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}" /t "REG_SZ" /d "Ask Copilot" /f
-timeout 1
-
-echo Revert Right Click Menu
-reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f /ve
-timeout 1
-
-echo Remove Cast from Right-Click Menu
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked" /v "{7AD84985-87B4-4a16-BE58-8B72A5B390F7}" /t "REG_SZ" /f
-timeout 1
-
-echo disable frequent folders in quick access in windows11
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer" /v "ShowFrequent" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo disable recently opend items in file explorer
-reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v "NoRecentDocsHistory" /t "REG_DWORD" /d "1" /f
-timeout 1
-
-echo remove quick access,home,gallery in navigation pane of file explorer
-reg add "HKLM\Software\Microsoft\Windows\CurrentVersion\Explorer" /v "HubMode" /t "REG_DWORD" /d "1" /f
-timeout 1
-reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Desktop\NameSpace\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}" /f
-timeout 1
-reg add "HKCU\Software\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}" /v "System.IsPinnedToNameSpaceTree" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Removing Office.com files in Quick Access
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer" /v "ShowCloudFilesInQuickAccess" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Removing Network button on Navigation Pane in explorer 
-reg add "HKCU\Software\Classes\CLSID\{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}" /v "System.IsPinnedToNameSpaceTree" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-echo Remove Home on explorer sidebar
-reg add "HKCU\Software\Classes\CLSID\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}" /v "System.IsPinnedToNameSpaceTree" /t "REG_DWORD" /d "0" /f
-timeout 1
-
-::::::::::::::::::::::::
-:: My Favorite Tweaks ::
-::::::::::::::::::::::::
-
-:: Enable long paths
-reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\FileSystem" /v "LongPathsEnabled" /t "REG_DWORD" /d "1" /f
-
-:: POWERCFG
-echo Go sleep mode when power button is pressed
-powercfg /setdcvalueindex SCHEME_CURRENT 4f971e89-eebd-4455-a8de-9e59040e7347 7648efa3-dd9c-4e3e-b566-50f929386280 1
-timeout 1
-powercfg /setacvalueindex SCHEME_CURRENT 4f971e89-eebd-4455-a8de-9e59040e7347 7648efa3-dd9c-4e3e-b566-50f929386280 1
-timeout 1
-
-echo disable all sleep timeouts
+:: REMOVAL
 for %%a in (
-	monitor-timeout-dc monitor-timeout-ac ^
-	disk-timeout-dc disk-timeout-ac ^
-	standby-timeout-ac standby-timeout-dc ^
-	hibernate-timeout-ac hibernate-timeout-dc
+	Clipchamp.Clipchamp ^
+	Microsoft.Teams ^
+	Microsoft.BingNews ^
+	Microsoft.BingSearch ^
+	Microsoft.BingWeather ^
+	Microsoft.Copilot ^
+	Microsoft.GamingApp ^
+	Microsoft.GetHelp ^
+	Microsoft.MixedReality.Portal ^
+	Microsoft.OneConnect ^
+	Microsoft.OutlookForWindows ^
+	Microsoft.People ^
+	Microsoft.Paint ^
+	Microsoft.PowerAutomateDesktop ^
+	Microsoft.ScreenSketch ^
+	Microsoft.Todos ^
+	Microsoft.Whiteboard ^
+	Microsoft.YourPhone ^
+	Microsoft.ZuneMusic ^
+	Microsoft.ZuneVideo ^
+	Microsoft.WindowsCommunicationsApps ^
+	Microsoft.WindowsMaps ^
+	Microsoft.WindowsFeedbackHub ^
+	Microsoft.WindowsCamera ^
+	Microsoft.WindowsSoundRecorder ^
+	Microsoft.WindowsAlarms ^
+	Microsoft.WindowsCalculator ^
+	Microsoft.Windows.DevHome ^
+	Microsoft.Windows.Photos ^
+	MicrosoftWindows.CrossDevice ^
+	Microsoft.MicrosoftOfficeHub ^
+	Microsoft.MicrosoftSolitaireCollection ^
+	Microsoft.MicrosoftStickyNotes ^
+	MicrosoftCorporationII.MicrosoftFamily ^
+	MicrosoftCorporationII.QuickAssist
 ) do (
-	powercfg /change %%a 0
+	echo Uninstalling %%a...
+	powershell "get-appxpackage -allusers %%a | remove-appxpackage 2>$null"
+	timeout 1
 )
+
+for %%a in (
+	Microsoft.Teams
+) do (
+	echo Uninstalling %%a...
+	echo y | winget uninstall %%a
+	timeout 1
+)
+
+onedrivesetup /uninstall
+timeout 1
+rmdir /s /q "c:\Users\%username%\AppData\Local\Microsoft\OneDrive" 2>nul
+timeout 1
+rmdir /s /q "c:\Users\%username%\OneDrive" 2>nul
 timeout 1
 
-echo enable network standby entry in registry
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\f15576e8-98b7-4186-b944-eafa664402d9" /v "Attributes" /t "REG_DWORD" /d "2" /f
+:: INSTALLATION
+echo y | winget upgrade --all -h --accept-source-agreements --accept-package-agreements
 timeout 1
 
-echo enable system cooling policy entry in registry
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\94d3a615-a899-4ac5-ae2b-e4d8f634367f" ^
-/v "Attributes" /t "REG_DWORD" /d "2" /f
+for %%a in (
+	Mozilla.Firefox.ja ^
+	Vivaldi.Vivaldi ^
+	Neemb.Distill ^
+	Dropbox.Dropbox ^
+	Cryptomator.Cryptomator ^
+	WinFsp.WinFsp ^
+	Microsoft.VCRedist.2015+.x64 ^
+	AutoHotkey.AutoHotkey ^
+	7zip.7zip ^
+	FreeTube.FreeTube ^
+	shinchiro.mpv ^
+	jurplel.qview ^
+	git.git
+) do (
+	echo Installing %%a...
+	echo y | winget install %%a -h --accept-source-agreements --accept-package-agreements
+	timeout 1
+)
+
+echo y | winget install Microsoft.VisualStudioCode -h --override "/verysilent /mergetasks=!runcode,addcontextmenufiles,addcontextmenufolders"
+timeout 1
+echo y | winget install Microsoft.VisualStudio.Community --override "--add Microsoft.VisualStudio.Workload.ManagedDesktop --includeRecommended --passive --norestart"
 timeout 1
 
-echo Disable network standby in sleep mode
-powercfg /setdcvalueindex scheme_current sub_none F15576E8-98B7-4186-B944-EAFA664402D9 0
-timeout 1
-powercfg /setacvalueindex scheme_current sub_none F15576E8-98B7-4186-B944-EAFA664402D9 0
-timeout 1
+::::::::::::::
+:: schtasks ::
+::::::::::::::
 
-echo Setting System Cooling Policy to Active
-powercfg /SETDCVALUEINDEX SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
-timeout 1
-powercfg /SETACVALUEINDEX SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 94d3a615-a899-4ac5-ae2b-e4d8f634367f 1
+:: Disable ScheduledDefrag
+schtasks /change /tn \Microsoft\Windows\Defrag\ScheduledDefrag /DISABLE
 timeout 1
 
-echo Setting CPU max speed
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX 100
-timeout 1
-powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX 100
+:: RunWingetStoreUpgrade
+schtasks /create /tn RunWingetUpgrade /tr "cmd.exe /c echo y | winget upgrade --all -h" /sc onlogon /delay 0001:00 /rl highest /f
 timeout 1
 
-echo Setting CPU min speed
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5
-timeout 1
-powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5
+:: DisableTabletMode for UMPC
+schtasks /create /tn DisableTabletMode /tr "reg add HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl /v ConvertibleSlateMode /t REG_DWORD /d 1 /f" /sc onlogon /rl highest /delay 0000:30 /f
 timeout 1
 
-:: Taskbar
-echo Enable taskkill button on taskbar
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings" /v "TaskbarEndTask" /t "REG_DWORD" /d "1" /f
-timeout 1
+::::::::::::::::::::::::::::::::::::::
+:: reload this script as powershell ::
+::::::::::::::::::::::::::::::::::::::
 
-echo Enable notification bell icons
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowNotificationIcon" /t "REG_DWORD" /d "1" /f
-timeout 1
+powershell -noprofile -executionpolicy bypass -command "iex ([System.IO.File]::ReadAllText('%~f0', [System.Text.Encoding]::UTF8))"
 
-:: Explorer
-echo Set Startup Delay to 1sec
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" /v "Startupdelayinmsec" /t "REG_DWORD" /d "1" /f
+exit /b
+: #>
 
-echo show hidden files,extension in explorer
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "Hidden" /t "REG_DWORD" /d "1" /f
-timeout 1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "HideFileExt" /t "REG_DWORD" /d "0" /f
-timeout 1
+## Run store GUI app updates to ensure store CLI availability
+Get-CimInstance -Namespace Root/Microsoft/Windows/TaskScheduler -ClassName MSFT_ScheduledTask -Filter 'TaskName = "ManualAppUpdate"' | Invoke-CimMethod -MethodName Run
+Start-Service -Name "InstallService" -ErrorAction SilentlyContinue
 
-echo Always show full path in taskbar
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\CabinetState" /v "FullPath" /t "REG_DWORD" /d "1" /f
-timeout 1
+## Disable Power Restrictions when running tasks
+function Disable-TaskPowerRestriction ($taskName) {
+    $task = Get-ScheduledTask -TaskName $taskName
+    $task.Settings.DisallowStartIfOnBatteries = $false
+    $task.Settings.StopIfGoingOnBatteries = $false
+    Set-ScheduledTask -InputObject $task
+}
 
-echo show downloads folder when explorer is launched 
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "LaunchTo" /t "REG_DWORD" /d 3 /f
-timeout 1
+## 
+Disable-TaskPowerRestriction -taskName "RunWingetUpgrade"
+Disable-TaskPowerRestriction -taskName "DisableTabletMode"
 
-:: Essential Tasks
-
-:: UpdateTailscale
-schtasks /create /tn UpdateTailscale /tr "cmd.exe /c echo y | tailscale.exe update" /sc onlogon /delay 0001:00 /rl highest /f
-:: timeout 1
-
-:: UpdateUserApps
-schtasks /create /tn UpdateUserApps /tr "K:\Scripts\Windows\Tasks\UpdateUserApps.bat" /sc onlogon /delay 0003:00 /f
-timeout 1
-
-:: ClearClipboard
-schtasks /create /tn ClearClipboard /tr "K:\Scripts\Windows\Tasks\ClearClipboard.bat" /sc hourly /mo 1 /f
-timeout 1
-
-:: Disable ConvertibleSlateMode to turn tabletmode off
-:: GPD Win Mini環境で、勝手にタブレットモードになってしまうので力技ではあるが元に戻すために設定。
-schtasks /create /tn RevertSlateMode ^
-  /tr "reg add HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl /v ConvertibleSlateMode /t REG_DWORD /d 1 /f" ^
-  /sc onlogon /rl highest /delay 0000:30 /f
-timeout 1
-
-:: タスクスケジューラにおいて、schtasks /createで作成したタスクはデフォルトではAC電源接続時にしか実行されない設定となっている。
-:: デスクトップPCであれば問題ないが、ノートパソコン、UMPCの場合、バッテリー駆動時にタスクが実行されないのでGUIで設定するためにtaskschd.msc呼び出し
-echo Disable "Run tasks only when running on AC power" and "Stop tasks when power source changes to Battery power" on Conditions Tab on GUI
-start taskschd.msc
-pause
-
-:: window animation config
-:: ウインドウアニメーションのオンオフ設定。
-:: 当初レジストリ直接操作を試したが、GUIの「適用」操作がないと正常に反映されなかったため仕方なくGUI操作。
-
-:: echo Configure window animations with GUI
-:: sysdm.cpl,3
-:: pause
-
-:: 自動で反映できるようになったので以下を追記・置き換え。
-:: いったん各種視覚効果のほとんどを無効化する
-reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v "MinAnimate" /t "REG_DWORD" /d "0" /f
-reg add "HKCU\Control Panel\Desktop" /v "EnableAeroPeek" /t "REG_DWORD" /d "0" /f
-reg add "HKCU\Control Panel\Desktop" /v "AlwaysHibernateThumbnails" /t "REG_DWORD" /d "0" /f
-reg add "HKCU\Control Panel\Desktop" /v "DragFullWindows" /t "REG_DWORD" /d "0" /f
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "IconsOnly" /t "REG_DWORD" /d "0" /f
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ListViewAlphaSelect" /t "REG_DWORD" /d "0" /f
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ListViewShadow" /t "REG_DWORD" /d "0" /f
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarAnimations" /t "REG_DWORD" /d "0" /f
-reg add "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" /v "NumThumbnails" /t "REG_DWORD" /d "0" /f
-
-:: スタート右クリック -> システム -> 関連リンク システムの詳細設定 -> システムのプロパティ 詳細設定タブ -> 「パフォーマンス」の設定ボタン -> 「視覚効果」タブ を「カスタム」に
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v "VisualFXSetting" /t "REG_DWORD" /d "3" /f
-
-:: 「スクリーンフォントの縁を滑らかにする」をオンに戻す。
-:: これで「アイコンの代わりに縮小版を表示する」と「タスクバーの縮小版のプレビューを保存する」含めた3項目のみ有効となる
-reg add "HKCU\Control Panel\Desktop" /v "FontSmoothing" /t "REG_SZ" /d "2" /f
-reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingGamma" /t "REG_DWORD" /d "0" /f
-reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingOrientation" /t "REG_DWORD" /d "1" /f
-reg add "HKCU\Control Panel\Desktop" /v "FontSmoothingType" /t "REG_DWORD" /d "2" /f
-
-:: 上記設定と整合するようにバイナリの値を設定する
-reg add "HKCU\Control Panel\Desktop" /v "UserPreferencesMask" /t "REG_BINARY" /d "9012038010000000" /f
-
-:: Networking
-:: Windows Firewall
-:: Block VLC Cast and Firefox telemetry
-:: 必須ではなく、おまじない程度で設定。
-netsh advfirewall reset
-netsh advfirewall firewall add rule name="block-vlc-cast-1900-in" dir=in action=block protocol=UDP remoteport=1900 profile=any
-netsh advfirewall firewall add rule name="block-vlc-cast-1900-out" dir=out action=block protocol=UDP remoteport=1900 profile=any
-netsh advfirewall firewall add rule name="block-vlc-cast-5353-in" dir=in action=block protocol=UDP remoteport=5353 profile=any
-netsh advfirewall firewall add rule name="block-vlc-cast-5353-out" dir=out action=block protocol=UDP remoteport=5353 profile=any
-netsh advfirewall firewall add rule name="block-mozilla-telemetry-in" remoteip=34.107.134.242 dir=in action=block profile=any
-netsh advfirewall firewall add rule name="block-mozilla-telemetry-out" remoteip=34.107.134.242 dir=out action=block profile=any
-
-pause
-
-## Restart
-shutdown /r /t 0
+cmd /c pause
