@@ -1,18 +1,14 @@
 ## 概要
 
-生産性向上のための、環境構築スクリプト、セルフホストサービス構築、雑多なコードまとめ。
+生産性向上のための、環境構築スクリプト、セルフホストサービス構築の個人的まとめ。
 
-## desktopカテゴリ
+## Appsカテゴリ
 
-NixOS, Arch Linux, Linux Mint, Windowsの設定自動化。
+Next.js+Vercel, Nextcloud, FreshRSS, ChangeDetection.io, Xmonad
 
-## serverカテゴリ
+## OSカテゴリ
 
-Nextcloud, FreshRSS, ChangeDetection.ioをはじめとする便利サービスの構築。
-
-## miscカテゴリ
-
-学習中の言語、一時的なスクリプトや試したツールなどの詰め合わせ。
+NixOS, Arch Linux, Linux Mint, Windows
 
 ## 補足
 
